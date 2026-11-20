@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Games — Игры по JavaScript | Русинов Давид, 11А</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg1: #0f0c29;
+    --bg2: #302b63;
+    --bg3: #24243e;
+    --accent: #f7b733;
+    --accent2: #fc4a1a;
+    --card: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.15);
+    --text: #f5f5f7;
+    --muted: #b8b8c8;
+    --easy: #4ade80;
+    --medium: #fbbf24;
+    --hard: #f87171;
+  }
+  html, body { min-height: 100%; }
+  body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+    background-size: 400% 400%;
+    animation: bgShift 20s ease infinite;
+    overflow-x: hidden;
+  }
+  @keyframes bgShift {
+    0%,100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Навигация */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(14px);
+    background: rgba(15,12,41,0.7);
+    border-bottom: 1px solid var(--border);
+  }
+  nav {
+    max-width: 1200px; margin: 0 auto;
+    padding: 14px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .logo {
+    font-size: 1.4rem; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    cursor: pointer;
+  }
+  .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-links button {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 10px;
+    cursor: pointer; font-size: 0.9rem;
+    transition: all 0.25s;
+  }
+  .nav-links button:hover {
+    background: var(--card);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  main {
+    max-width: 1200px; margin: 0 auto;
+    padding: 30px 20px 60px;
+  }
+  .hero {
+    text-align: center; padding: 40px 20px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    margin-bottom: 14px;
+    background: linear-gradient(90deg, #fff, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto; }
+
+  .section-title {
+    font-size: 1.6rem; margin: 30px 0 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::before {
+    content: ''; width: 6px; height: 28px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    border-radius: 3px;
+  }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .game-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .game-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(247,183,51,0.1));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .game-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+  .game-card:hover::before { opacity: 1; }
+  .game-card h3 { font-size: 1.3rem; margin-bottom: 8px; position: relative; }
+  .game-card p { color: var(--muted); font-size: 0.95rem; margin-bottom: 14px; position: relative; }
+  .badge {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    position: relative;
+  }
+  .badge.easy { background: rgba(74,222,128,0.2); color: var(--easy); border: 1px solid var(--easy); }
+  .badge.medium { background: rgba(251,191,36,0.2); color: var(--medium); border: 1px solid var(--medium); }
+  .badge.hard { background: rgba(248,113,113,0.2); color: var(--hard); border: 1px solid var(--hard); }
+
+  /* Игровой экран */
+  .game-screen {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.4s ease;
+  }
+  .game-screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .game-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+  }
+  .game-header h2 { font-size: 1.6rem; }
+  .back-btn {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #fff; border: none; padding: 10px 20px;
+    border-radius: 10px; cursor: pointer; font-weight: 600;
+    transition: transform 0.2s;
+  }
+  .back-btn:hover { transform: scale(1.05); }
+
+  .game-body { min-height: 200px; }
+  .question {
+    background: rgba(0,0,0,0.25);
+    padding: 20px; border-radius: 14px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    border-left: 4px solid var(--accent);
+  }
+  .code-block {
+    background: #1a1a2e; color: #a7f3d0;
+    padding: 16px; border-radius: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.95rem;
+    overflow-x: auto; white-space: pre;
+    margin: 10px 0;
+  }
+  .options { display: grid; gap: 10px; }
+  .option-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+  .option-btn:hover { background: rgba(247,183,51,0.15); border-color: var(--accent); }
+  .option-btn.correct { background: rgba(74,222,128,0.25); border-color: var(--easy); }
+  .option-btn.wrong { background: rgba(248,113,113,0.25); border-color: var(--hard); }
+
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  .submit-btn {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #fff; border: none; padding: 12px 28px;
+    border-radius: 10px; cursor: pointer; font-weight: 600;
+    font-size: 1rem;
+    transition: transform 0.2s;
+  }
+  .submit-btn:hover { transform: scale(1.03); }
+
+  .stats {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: rgba(0,0,0,0.25);
+    padding: 10px 18px; border-radius: 10px;
+    font-size: 0.95rem;
+  }
+  .stat b { color: var(--accent); }
+
+  .feedback {
+    padding: 14px; border-radius: 10px;
+    margin-top: 14px;
+    font-weight: 600;
+    display: none;
+  }
+  .feedback.show { display: block; animation: fadeIn 0.3s; }
+  .feedback.success { background: rgba(74,222,128,0.2); color: var(--easy); }
+  .feedback.error { background: rgba(248,113,113,0.2); color: var(--hard); }
+
+  /* Сертификат */
+  .certificate-section {
+    margin-top: 40px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+  }
+  .certificate-section h2 {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 16px;
+  }
+  #certificateCanvas {
+    max-width: 100%; height: auto;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+
+  footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  footer b {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  .color-box {
+    width: 150px; height: 150px;
+    border-radius: 14px;
+    margin: 10px auto;
+    border: 3px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .game-screen { padding: 20px; }
+    .hero { padding: 20px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="logo" onclick="showHome()">⚡ JS Games</div>
+    <div class="nav-links">
+      <button onclick="showHome()">🏠 Главная</button>
+      <button onclick="scrollToId('games-section')">🎮 Игры</button>
+      <button onclick="scrollToId('certificate-section')">🏆 Сертификат</button>
+      <button onclick="scrollToId('about')">ℹ️ О сайте</button>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <!-- Главная -->
+  <section id="home">
+    <div class="hero">
+      <h1>🎮 Игры по JavaScript</h1>
+      <p>Проверь свои знания JS в увлекательной форме! 6 игр разной сложности, звуки, красивый дизайн и именной сертификат за прохождение.</p>
+    </div>
+
+    <h2 class="section-title" id="games-section">Выбери игру</h2>
+    <div class="games-grid">
+      <div class="game-card" onclick="startGame(1)">
+        <h3>🔢 Угадай число</h3>
+        <p>Классика: угадай число от 1 до 100 за минимум попыток.</p>
+        <span class="badge easy">Легкий</span>
+      </div>
+      <div class="game-card" onclick="startGame(2)">
+        <h3>🎨 Угадай цвет по RGB</h3>
+        <p>Определи, какой цвет закодирован в RGB-значениях.</p>
+        <span class="badge medium">Средний</span>
+      </div>
+      <div class="game-card" onclick="startGame(3)">
+        <h3>📚 JS Quiz</h3>
+        <p>Вопросы по основам JavaScript: переменные, типы, операторы.</p>
+        <span class="badge easy">Легкий</span>
+      </div>
+      <div class="game-card" onclick="startGame(4)">
+        <h3>🧮 Математический тренажёр</h3>
+        <p>Решай примеры на время. Чем быстрее — тем больше очков.</p>
+        <span class="badge medium">Средний</span>
+      </div>
+      <div class="game-card" onclick="startGame(5)">
+        <h3>🐛 Найди ошибку в коде</h3>
+        <p>В коде спрятана ошибка. Найди, где она!</p>
+        <span class="badge hard">Тяжелый</span>
+      </div>
+      <div class="game-card" onclick="startGame(6)">
+        <h3>🧠 Что выведет console.log?</h3>
+        <p>Угадай результат выполнения JS-кода. Для настоящих профи!</p>
+        <span class="badge hard">Тяжелый</span>
+      </div>
+    </div>
+
+    <!-- Сертификат -->
+    <div class="certificate-section" id="certificate-section">
+      <h2>🏆 Именной сертификат</h2>
+      <p style="color:var(--muted); margin-bottom: 16px;">Введи своё ФИО, пройди любую игру и получи сертификат!</p>
+      <input type="text" id="studentName" placeholder="Иванов Иван Иванович" style="max-width:400px; margin: 0 auto;">
+      <br>
+      <button class="submit-btn" onclick="generateCertificate()">📜 Сгенерировать сертификат</button>
+      <button class="submit-btn" onclick="downloadCertificate()" style="margin-left:10px;">⬇️ Скачать PNG</button>
+      <br>
+      <canvas id="certificateCanvas" width="1000" height="700"></canvas>
+    </div>
+
+    <div id="about" style="margin-top:40px; text-align:center; color:var(--muted);">
+      <h2 class="section-title" style="justify-content:center;">О проекте</h2>
+      <p>Сайт создан для изучения JavaScript через игру.<br>
+      Автор: <b style="color:var(--accent);">Русинов Давид, 11А класс</b><br>
+      © 2026. Все права защищены.</p>
+    </div>
+  </section>
+
+  <!-- Игровой экран -->
+  <section class="game-screen" id="gameScreen">
+    <div class="game-header">
+      <h2 id="gameTitle">Игра</h2>
+      <button class="back-btn" onclick="showHome()">← Назад</button>
+    </div>
+    <div class="stats" id="gameStats"></div>
+    <div class="game-body" id="gameBody"></div>
+    <div class="feedback" id="feedback"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Сайт создан: <b>Русинов Давид, 11А класс</b> | 2026</p>
+  <p style="margin-top:6px; font-size:0.85rem;">🎧 Звуки генерируются через Web Audio API</p>
+</footer>
+
+<script>
+/* ============ ЗВУКИ (Web Audio API) ============ */
+let audioCtx;
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playTone(freq, duration = 0.15, type = 'sine', vol = 0.2) {
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+function soundCorrect() { playTone(523, 0.1); setTimeout(()=>playTone(659, 0.1), 100); setTimeout(()=>playTone(784, 0.2), 200); }
+function soundWrong() { playTone(200, 0.15, 'sawtooth'); setTimeout(()=>playTone(150, 0.25, 'sawtooth'), 150); }
+function soundClick() { playTone(440, 0.05, 'square', 0.1); }
+function soundWin() { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.2),i*120)); }
+
+/* ============ НАВИГАЦИЯ ============ */
+function showHome() {
+  soundClick();
+  document.getElementById('home').style.display = 'block';
+  document.getElementById('gameScreen').classList.remove('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function scrollToId(id) {
+  soundClick();
+  document.getElementById('home').style.display = 'block';
+  document.getElementById('gameScreen').classList.remove('active');
+  setTimeout(()=>{
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({behavior:'smooth'});
+  }, 100);
+}
+
+/* ============ ИГРОВОЙ ДВИЖОК ============ */
+let currentGame = null;
+let gameData = {};
+
+function startGame(num) {
+  soundClick();
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('gameScreen').classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  currentGame = num;
+  gameData = {score: 0, attempts: 0, wins: 0, round: 0, total: 5};
+  const titles = {1:'🔢 Угадай число', 2:'🎨 Угадай цвет по RGB', 3:'📚 JS Quiz', 4:'🧮 Математический тренажёр', 5:'🐛 Найди ошибку в коде', 6:'🧠 Что выведет console.log?'};
+  document.getElementById('gameTitle').textContent = titles[num];
+  document.getElementById('feedback').classList.remove('show');
+  if (num === 1) initGuessNumber();
+  else if (num === 2) initColorGame();
+  else if (num === 3) initJSQuiz();
+  else if (num === 4) initMathGame();
+  else if (num === 5) initBugGame();
+  else if (num === 6) initConsoleGame();
+}
+
+function updateStats() {
+  const s = document.getElementById('gameStats');
+  if (currentGame === 1) {
+    s.innerHTML = `<div class="stat">Попытки: <b>${gameData.attempts}</b></div><div class="stat">Цель: угадать число от 1 до 100</div>`;
+  } else {
+    s.innerHTML = `<div class="stat">Вопрос: <b>${gameData.round}/${gameData.total}</b></div><div class="stat">Правильно: <b>${gameData.wins}</b></div><div class="stat">Очки: <b>${gameData.score}</b></div>`;
+  }
+}
+
+function showFeedback(text, success) {
+  const f = document.getElementById('feedback');
+  f.textContent = text;
+  f.className = 'feedback show ' + (success ? 'success' : 'error');
+  if (success) soundCorrect(); else soundWrong();
+}
+
+function endGame() {
+  const percent = Math.round((gameData.wins / gameData.total) * 100);
+  let msg = '';
+  if (percent >= 80) { msg = `🏆 Отлично! ${percent}% правильных ответов!`; soundWin(); }
+  else if (percent >= 50) { msg = `👍 Хорошо! ${percent}% правильных. Можно лучше!`; }
+  else { msg = `💪 ${percent}% правильных. Попробуй ещё раз!`; }
+  document.getElementById('gameBody').innerHTML = `
+    <div style="text-align:center; padding:30px;">
+      <h2 style="font-size:2rem; margin-bottom:16px;">${msg}</h2>
+      <p style="color:var(--muted); margin-bottom:20px;">Правильных ответов: ${gameData.wins} из ${gameData.total}</p>
+      <button class="submit-btn" onclick="startGame(${currentGame})">🔄 Играть снова</button>
+      <button class="submit-btn" onclick="scrollToId('certificate-section')" style="margin-left:10px;">🏆 Получить сертификат</button>
+    </div>`;
+  document.getElementById('gameStats').innerHTML = '';
+  document.getElementById('feedback').classList.remove('show');
+}
+
+/* ============ ИГРА 1: Угадай число ============ */
+function initGuessNumber() {
+  gameData.target = Math.floor(Math.random() * 100) + 1;
+  gameData.attempts = 0;
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">Я загадал число от 1 до 100. Попробуй угадать!</div>
+    <input type="number" id="guessInput" placeholder="Введи число" min="1" max="100">
+    <button class="submit-btn" onclick="checkGuess()">Проверить</button>
+    <div id="guessHint" style="margin-top:14px; font-size:1.1rem;"></div>
+  `;
+  updateStats();
+  document.getElementById('guessInput').addEventListener('keypress', e => { if (e.key === 'Enter') checkGuess(); });
+}
+function checkGuess() {
+  const input = document.getElementById('guessInput');
+  const val = parseInt(input.value);
+  if (isNaN(val) || val < 1 || val > 100) { showFeedback('Введи число от 1 до 100!', false); return; }
+  gameData.attempts++;
+  const hint = document.getElementById('guessHint');
+  if (val === gameData.target) {
+    hint.innerHTML = `<span style="color:var(--easy);">🎉 Угадал! Число было <b>${gameData.target}</b>. Попыток: ${gameData.attempts}</span>`;
+    soundWin();
+    setTimeout(()=>{
+      if (confirm(`Победа за ${gameData.attempts} попыток! Играть снова?`)) startGame(1);
+      else showHome();
+    }, 500);
+  } else if (val < gameData.target) {
+    hint.innerHTML = `<span style="color:var(--medium);">⬆️ Моё число БОЛЬШЕ</span>`;
+    showFeedback('Больше!', true);
+  } else {
+    hint.innerHTML = `<span style="color:var(--medium);">⬇️ Моё число МЕНЬШЕ</span>`;
+    showFeedback('Меньше!', true);
+  }
+  updateStats();
+  input.value = ''; input.focus();
+}
+
+/* ============ ИГРА 2: Угадай цвет ============ */
+const colorNames = ['Красный','Зелёный','Синий','Жёлтый','Фиолетовый','Оранжевый','Розовый','Голубой','Белый','Чёрный','Серый','Коричневый'];
+function initColorGame() {
+  gameData.round = 0; gameData.wins = 0; gameData.score = 0;
+  nextColorRound();
+}
+function nextColorRound() {
+  gameData.round++;
+  if (gameData.round > gameData.total) return endGame();
+  const r = Math.floor(Math.random()*256), g = Math.floor(Math.random()*256), b = Math.floor(Math.random()*256);
+  const correct = `rgb(${r}, ${g}, ${b})`;
+  let options = [correct];
+  while (options.length < 4) {
+    const rr = Math.floor(Math.random()*256), gg = Math.floor(Math.random()*256), bb = Math.floor(Math.random()*256);
+    const c = `rgb(${rr}, ${gg}, ${bb})`;
+    if (!options.includes(c)) options.push(c);
+  }
+  options = options.sort(()=>Math.random()-0.5);
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">Какой из вариантов соответствует этому цвету?</div>
+    <div class="color-box" style="background:${correct};"></div>
+    <div class="options">
+      ${options.map(o=>`<button class="option-btn" onclick="checkColor(this,'${o}','${correct}')">${o}</button>`).join('')}
+    </div>
+  `;
+  updateStats();
+}
+function checkColor(btn, chosen, correct) {
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    gameData.wins++; gameData.score += 20;
+    showFeedback('✅ Верно! +20 очков', true);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.option-btn').forEach(b=>{ if (b.textContent === correct) b.classList.add('correct'); });
+    showFeedback(`❌ Правильный ответ: ${correct}`, false);
+  }
+  updateStats();
+  setTimeout(nextColorRound, 1500);
+}
+
+/* ============ ИГРА 3: JS Quiz ============ */
+const jsQuiz = [
+  {q:'Как объявить переменную в JS?', o:['var x','variable x','int x','dim x'], a:0},
+  {q:'Какой тип данных у значения "42"?', o:['number','string','boolean','object'], a:1},
+  {q:'Что вернёт typeof null?', o:['"null"','"undefined"','"object"','"boolean"'], a:2},
+  {q:'Как добавить элемент в конец массива?', o:['push()','pop()','shift()','append()'], a:0},
+  {q:'Что делает оператор ===?', o:['Присваивание','Сравнение с приведением','Строгое сравнение','Логическое И'], a:2},
+];
+function initJSQuiz() {
+  gameData.round = 0; gameData.wins = 0; gameData.score = 0;
+  gameData.total = jsQuiz.length;
+  gameData.questions = [...jsQuiz].sort(()=>Math.random()-0.5);
+  nextQuizRound();
+}
+function nextQuizRound() {
+  gameData.round++;
+  if (gameData.round > gameData.total) return endGame();
+  const q = gameData.questions[gameData.round-1];
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">${q.q}</div>
+    <div class="options">
+      ${q.o.map((opt,i)=>`<button class="option-btn" onclick="checkQuiz(this,${i},${q.a})">${opt}</button>`).join('')}
+    </div>
+  `;
+  updateStats();
+}
+function checkQuiz(btn, chosen, correct) {
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll('.option-btn');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    gameData.wins++; gameData.score += 15;
+    showFeedback('✅ Правильно!', true);
+  } else {
+    btn.classList.add('wrong');
+    btns[correct].classList.add('correct');
+    showFeedback('❌ Неверно', false);
+  }
+  updateStats();
+  setTimeout(nextQuizRound, 1400);
+}
+
+/* ============ ИГРА 4: Математика ============ */
+function initMathGame() {
+  gameData.round = 0; gameData.wins = 0; gameData.score = 0;
+  nextMathRound();
+}
+function nextMathRound() {
+  gameData.round++;
+  if (gameData.round > gameData.total) return endGame();
+  const ops = ['+','-','*'];
+  const op = ops[Math.floor(Math.random()*ops.length)];
+  let a, b, answer;
+  if (op === '+') { a = Math.floor(Math.random()*50)+1; b = Math.floor(Math.random()*50)+1; answer = a+b; }
+  else if (op === '-') { a = Math.floor(Math.random()*50)+20; b = Math.floor(Math.random()*a); answer = a-b; }
+  else { a = Math.floor(Math.random()*12)+2; b = Math.floor(Math.random()*12)+2; answer = a*b; }
+  gameData.currentAnswer = answer;
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">Реши пример: <b style="font-size:1.5rem;">${a} ${op} ${b} = ?</b></div>
+    <input type="number" id="mathInput" placeholder="Твой ответ">
+    <button class="submit-btn" onclick="checkMath()">Ответить</button>
+  `;
+  updateStats();
+  const inp = document.getElementById('mathInput');
+  inp.focus();
+  inp.addEventListener('keypress', e => { if (e.key === 'Enter') checkMath(); });
+}
+function checkMath() {
+  const val = parseInt(document.getElementById('mathInput').value);
+  if (isNaN(val)) { showFeedback('Введи число!', false); return; }
+  if (val === gameData.currentAnswer) {
+    gameData.wins++; gameData.score += 10;
+    showFeedback('✅ Верно! +10 очков', true);
+  } else {
+    showFeedback(`❌ Неверно. Правильный ответ: ${gameData.currentAnswer}`, false);
+  }
+  updateStats();
+  setTimeout(nextMathRound, 1400);
+}
+
+/* ============ ИГРА 5: Найди ошибку ============ */
+const bugTasks = [
+  {code:'let x = 10\nconsol.log(x)', err:'Опечатка: consol вместо console', opts:['Опечатка: consol вместо console','Нет ошибки','Нужен var вместо let','Точка с запятой пропущена'], a:0},
+  {code:'function greet(name) {\n  return "Hello " + name\n}\ngreet()', err:'Функция вызвана без аргумента — вернёт "Hello undefined"', opts:['Синтаксическая ошибка','Функция вызвана без аргумента — вернёт "Hello undefined"','return написан неверно','Нельзя использовать +'], a:1},
+  {code:'const arr = [1, 2, 3]\narr[3] = 4\narr.push(5)\nconsole.log(arr.length)', err:'Ошибки нет, выведется 5', opts:['Нельзя изменять const','arr[3] — ошибка индекса','Ошибки нет, выведется 5','push не работает с const'], a:2},
+  {code:'let x = "5" + 3\nconsole.log(x)', err:'Ошибки нет, выведется "53"', opts:['Будет 8','Ошибки нет, выведется "53"','SyntaxError','Нельзя складывать строку и число'], a:1},
+  {code:'for (let i = 0; i < 5; i++) {\n  console.log(i)\n}', err:'Ошибки нет, выведет 0 1 2 3 4', opts:['Бесконечный цикл','Ошибки нет, выведет 0 1 2 3 4','i не определено','Нужен var вместо let'], a:1},
+];
+function initBugGame() {
+  gameData.round = 0; gameData.wins = 0; gameData.score = 0;
+  gameData.total = bugTasks.length;
+  gameData.questions = [...bugTasks].sort(()=>Math.random()-0.5);
+  nextBugRound();
+}
+function nextBugRound() {
+  gameData.round++;
+  if (gameData.round > gameData.total) return endGame();
+  const q = gameData.questions[gameData.round-1];
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">Найди проблему в коде:</div>
+    <div class="code-block">${escapeHtml(q.code)}</div>
+    <div class="options">
+      ${q.opts.map((o,i)=>`<button class="option-btn" onclick="checkBug(this,${i},${q.a})">${o}</button>`).join('')}
+    </div>
+  `;
+  updateStats();
+}
+function checkBug(btn, chosen, correct) {
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll('.option-btn');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    gameData.wins++; gameData.score += 25;
+    showFeedback('✅ Верно! Ты нашёл ошибку!', true);
+  } else {
+    btn.classList.add('wrong');
+    btns[correct].classList.add('correct');
+    showFeedback('❌ Неверно. Смотри правильный ответ.', false);
+  }
+  updateStats();
+  setTimeout(nextBugRound, 1800);
+}
+
+/* ============ ИГРА 6: console.log ============ */
+const consoleTasks = [
+  {code:'console.log(typeof NaN)', opts:['"number"','"NaN"','"undefined"','Error'], a:0},
+  {code:'console.log(0.1 + 0.2 === 0.3)', opts:['true','false','NaN','Error'], a:1},
+  {code:'console.log([1,2,3] + [4,5,6])', opts:['[1,2,3,4,5,6]','"1,2,34,5,6"','Error','NaN'], a:1},
+  {code:'console.log(typeof [])', opts:['"array"','"object"','"undefined"','"list"'], a:1},
+  {code:'console.log(Boolean("false"))', opts:['false','true','"false"','Error'], a:1},
+  {code:'console.log(+"")', opts:['0','NaN','""','Error'], a:0},
+  {code:'console.log(null == undefined)', opts:['true','false','Error','null'], a:0},
+];
+function initConsoleGame() {
+  gameData.round = 0; gameData.wins = 0; gameData.score = 0;
+  gameData.total = 5;
+  gameData.questions = [...consoleTasks].sort(()=>Math.random()-0.5).slice(0,5);
+  nextConsoleRound();
+}
+function nextConsoleRound() {
+  gameData.round++;
+  if (gameData.round > gameData.total) return endGame();
+  const q = gameData.questions[gameData.round-1];
+  document.getElementById('gameBody').innerHTML = `
+    <div class="question">Что выведет этот код?</div>
+    <div class="code-block">${escapeHtml(q.code)}</div>
+    <div class="options">
+      ${q.opts.map((o,i)=>`<button class="option-btn" onclick="checkConsole(this,${i},${q.a})">${o}</button>`).join('')}
+    </div>
+  `;
+  updateStats();
+}
+function checkConsole(btn, chosen, correct) {
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  const btns = document.querySelectorAll('.option-btn');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    gameData.wins++; gameData.score += 30;
+    showFeedback('✅ Блестяще! Ты настоящий JS-профи!', true);
+  } else {
+    btn.classList.add('wrong');
+    btns[correct].classList.add('correct');
+    showFeedback('❌ Неверно. Смотри правильный ответ.', false);
+  }
+  updateStats();
+  setTimeout(nextConsoleRound, 1800);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============ СЕРТИФИКАТ ============ */
+function generateCertificate() {
+  const name = document.getElementById('studentName').value.trim() || 'Ученик';
+  const canvas = document.getElementById('certificateCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  
+  // Фон-градиент
+  const grad = ctx.createLinearGradient(0,0,w,h);
+  grad.addColorStop(0,'#0f0c29');
+  grad.addColorStop(0.5,'#302b63');
+  grad.addColorStop(1,'#24243e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,w,h);
+  
+  // Декоративные круги
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = '#f7b733';
+  ctx.beginPath(); ctx.arc(100,100,200,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fc4a1a';
+  ctx.beginPath(); ctx.arc(w-100,h-100,250,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+  
+  // Рамка
+  ctx.strokeStyle = '#f7b733';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(30,30,w-60,h-60);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(45,45,w-90,h-90);
+  
+  // Заголовок
+  ctx.fillStyle = '#f7b733';
+  ctx.font = 'bold 56px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('СЕРТИФИКАТ', w/2, 140);
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '24px Segoe UI, Arial';
+  ctx.fillText('об прохождении курса по JavaScript', w/2, 190);
+  
+  // Разделитель
+  ctx.strokeStyle = '#f7b733';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(w/2-200, 220); ctx.lineTo(w/2+200, 220); ctx.stroke();
+  
+  // "Настоящим подтверждается, что"
+  ctx.fillStyle = '#b8b8c8';
+  ctx.font = '22px Segoe UI, Arial';
+  ctx.fillText('Настоящим подтверждается, что', w/2, 270);
+  
+  // ФИО
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 44px Segoe UI, Arial';
+  ctx.fillText(name, w/2, 340);
+  
+  // Подпись
+  ctx.fillStyle = '#b8b8c8';
+  ctx.font = '22px Segoe UI, Arial';
+  ctx.fillText('успешно прошёл(а) интерактивные игры по JavaScript', w/2, 400);
+  ctx.fillText('на сайте "JS Games" и продемонстрировал(а) знания', w/2, 430);
+  
+  // Дата
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+  ctx.fillStyle = '#f7b733';
+  ctx.font = '20px Segoe UI, Arial';
+  ctx.fillText(`Дата: ${dateStr}`, w/2, 500);
+  
+  // Автор
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'italic 18px Segoe UI, Arial';
+  ctx.fillText('Автор проекта: Русинов Давид, 11А класс', w/2, 560);
+  
+  // Подпись-линия
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(w/2-150, 620); ctx.lineTo(w/2+150, 620); ctx.stroke();
+  ctx.fillStyle = '#b8b8c8';
+  ctx.font = '16px Segoe UI, Arial';
+  ctx.fillText('Подпись организатора', w/2, 645);
+  
+  soundWin();
+}
+
+function downloadCertificate() {
+  const name = document.getElementById('studentName').value.trim();
+  if (!name) { alert('Сначала введи ФИО!'); return; }
+  generateCertificate();
+  const canvas = document.getElementById('certificateCanvas');
+  const link = document.createElement('a');
+  link.download = `Сертификат_${name.replace(/\s+/g,'_')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Инициализация сертификата при загрузке
+window.addEventListener('load', () => {
+  generateCertificate();
+});
+</script>
+</body>
+</html>m
